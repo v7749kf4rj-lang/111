@@ -1,0 +1,30 @@
+//@version=5
+indicator("1H RSI Realtime Break Signals (5m)", shorttitle="1H RSI RT S/L", overlay=true)
+
+// This indicator is designed for observation on a 5-minute chart.
+// It intentionally uses lookahead_on so the current, still-forming 1-hour RSI
+// is reflected before the 1-hour candle closes.
+// WARNING: Signals can repaint. If the 1-hour RSI moves back below 70 or above
+// 30 before the 1-hour candle closes, signals can disappear or change.
+// This is a realtime alert/monitoring indicator, not a backtesting/confirmed-signal tool.
+
+htfTimeframe = input.timeframe("60", "Higher Timeframe RSI")
+rsiLength = input.int(14, "RSI Length", minval=1)
+overbought = input.float(70.0, "Overbought", step=0.1)
+oversold = input.float(30.0, "Oversold", step=0.1)
+
+htfRsi = request.security(
+     syminfo.tickerid,
+     htfTimeframe,
+     ta.rsi(close, rsiLength),
+     gaps=barmerge.gaps_off,
+     lookahead=barmerge.lookahead_on)
+
+shortSignal = htfRsi >= overbought and htfRsi[1] < overbought
+longSignal = htfRsi <= oversold and htfRsi[1] > oversold
+
+plotchar(shortSignal, title="Short Signal", char="S", location=location.abovebar, color=color.red, size=size.tiny)
+plotchar(longSignal, title="Long Signal", char="L", location=location.belowbar, color=color.blue, size=size.tiny)
+
+alertcondition(shortSignal, title="1H RSI Realtime Overbought Break", message="1H RSI entered overbought in realtime: short observation signal. This can repaint before the 1H candle closes.")
+alertcondition(longSignal, title="1H RSI Realtime Oversold Break", message="1H RSI entered oversold in realtime: long observation signal. This can repaint before the 1H candle closes.")
